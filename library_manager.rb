@@ -146,7 +146,7 @@ relink_action.on_triggered do
       qn = inst.cell.qname
       cn = inst.cell.cell_index
       next unless lib_map.key?(qn)
-      puts "Current #{qn} #{inst.class} #{inst.trans} #{inst.a} #{inst.b} #{inst.na} #{inst.nb} #{lib_map[qn]} #{cn}"
+      ## puts "Current #{qn} #{inst.class} #{inst.trans} #{inst.a} #{inst.b} #{inst.na} #{inst.nb} #{lib_map[qn]} #{cn}"
       new_inst = CellInstArray.new(lib_map[qn], inst.trans, inst.a, inst.b, inst.na, inst.nb)
       inst.delete()
       parent.insert(new_inst)
@@ -160,8 +160,7 @@ relink_action.on_triggered do
   end
 
   layout.end_changes
-  layout.refresh()
-  mw.redraw
+  cv.show_layout(layout, false)
   
   MessageBox::info("Library Manager", "Re‑linked #{count} instances to library cells.", MessageBox::Ok)
   layout.refresh()

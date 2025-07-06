@@ -1,8 +1,6 @@
 # KLayout GDS Library Loader
 
-.. image:: https://img.shields.io/github/license/mabrains/klayout_load_lib.git
-   :alt: GitHub license - Apache 2.0
-   :target: https://github.com/mabrains/klayout_load_lib.git
+[![GitHub license](https://img.shields.io/github/license/mabrains/klayout_load_lib)](https://github.com/mabrains/klayout_load_lib)
 
 [<p align="center"><img src="images/mabrains.png" width="700">](http://mabrains.com/)
 
@@ -25,7 +23,7 @@ This setup enables KLayout to register external GDS files as libraries, making t
 
 ## 🚀 Usage
 
-Launch KLayout in GUI mode and run the script with:
+Launch KLayout in GUI mode by running the following script:
 
 ```bash
 klayout -rm load_libs.rb

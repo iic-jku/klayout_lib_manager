@@ -69,7 +69,7 @@ save_lib_action.on_triggered do
   lib_cells.each do |c|
     old_name = c.name
     lib_name  = c.qname.split(".").first || "LIB"
-    new_name = "#{lib_name}.#{old_name}"
+    new_name = "#{lib_name}___#{old_name}"
     layout.rename_cell(c.cell_index, new_name)
     puts "Renamed cell idx=#{c.cell_index}: '#{old_name}' → '#{new_name}'"
   end
@@ -127,8 +127,8 @@ relink_action.on_triggered do
     lib = Library.library_by_name(lib_name)
     next unless lib && lib.layout
     lib.layout.each_cell do |lc|
-      next unless used_qnames.include?("#{lib_name}.#{lc.qname}")
-      lib_map["#{lib_name}.#{lc.qname}"] = layout.add_lib_cell(lib, lc.cell_index)
+      next unless used_qnames.include?("#{lib_name}___#{lc.qname}")
+      lib_map["#{lib_name}___#{lc.qname}"] = layout.add_lib_cell(lib, lc.cell_index)
     end
   end
 
@@ -139,22 +139,33 @@ relink_action.on_triggered do
 
   # 4️⃣ Replace instances using inst.replace for safety
   count = 0
+  cells_to_remove = []
   layout.start_changes
   layout.each_cell do |parent|
     parent.each_inst.to_a.each do |inst|
       qn = inst.cell.qname
+      cn = inst.cell.cell_index
       next unless lib_map.key?(qn)
-      puts "Current #{qn} #{inst.class}"
-      new_inst = CellInstArray.new(lib_map[qn], inst.trans)
-      layout.cell(inst.cell_index)  # ensure cell loaded
-      parent.replace(inst, new_inst)
+      puts "Current #{qn} #{inst.class} #{inst.trans} #{inst.a} #{inst.b} #{inst.na} #{inst.nb} #{lib_map[qn]} #{cn}"
+      new_inst = CellInstArray.new(lib_map[qn], inst.trans, inst.a, inst.b, inst.na, inst.nb)
+      inst.delete()
+      parent.insert(new_inst)
+      cells_to_remove << cn
       count += 1
     end
   end
-  layout.end_changes
 
+  cells_to_remove.each do |c|
+    layout.delete_cell(c)
+  end
+
+  layout.end_changes
+  layout.refresh()
   mw.redraw
+  
   MessageBox::info("Library Manager", "Re‑linked #{count} instances to library cells.", MessageBox::Ok)
+  layout.refresh()
+  mw.redraw
 
 end
 

@@ -1,6 +1,6 @@
 # KLayout GDS Library Loader
 
-[![GitHub license](https://img.shields.io/github/license/mabrains/klayout_load_lib)](https://github.com/mabrains/klayout_load_lib)
+[![License](https://img.shields.io/badge/license-GPLv3-blue)](/LICENSE)  
 
 [<p align="center"><img src="images/mabrains.png" width="700">](http://mabrains.com/)
 
@@ -35,7 +35,8 @@ Example for json file:
 {
   "gf180mcu_fd_sc_mcu7t5v0": "gf_libs/gf180mcu_fd_sc_mcu7t5v0.gds",
   "gf180mcu_fd_sc_mcu9t5v0": "gf_libs/gf180mcu_fd_sc_mcu9t5v0.gds",
-  "gf180mcu_fd_io": "gf_libs/gf180mcu_fd_io.gds"
+  "gf180mcu_fd_io": "gf_libs/gf180mcu_fd_io.gds",
+  "ring_osc": "gf_libs/ring_osc.gds"
 }
 ```
 

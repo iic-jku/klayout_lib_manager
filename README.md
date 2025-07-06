@@ -1,4 +1,4 @@
-# KLayout GDS Library Loader
+# KLayout Library Manager
 
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](/LICENSE)  
 

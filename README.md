@@ -15,7 +15,7 @@ This setup enables KLayout to register external GDS files as libraries, making t
 ## 📁 Directory Structure
 
 ```
-├── gf_libs/                            # Folder containing examples for GDS libraries
+├── example_libs/                       # Folder containing examples for GDS libraries
 ├── libs.json                           # JSON mapping of library_name → GDS path
 ├── load_libs.rb                        # Ruby script to load and register the libraries
 └── README.md                           # This documentation file
@@ -33,10 +33,10 @@ Example for json file:
 
 ```json
 {
-  "gf180mcu_fd_sc_mcu7t5v0": "gf_libs/gf180mcu_fd_sc_mcu7t5v0.gds",
-  "gf180mcu_fd_sc_mcu9t5v0": "gf_libs/gf180mcu_fd_sc_mcu9t5v0.gds",
-  "gf180mcu_fd_io": "gf_libs/gf180mcu_fd_io.gds",
-  "ring_osc": "gf_libs/ring_osc.gds"
+  "gf180mcu_fd_sc_mcu7t5v0": "example_libs/gf180mcu_fd_sc_mcu7t5v0.gds",
+  "gf180mcu_fd_sc_mcu9t5v0": "example_libs/gf180mcu_fd_sc_mcu9t5v0.gds",
+  "gf180mcu_fd_io": "example_libs/gf180mcu_fd_io.gds",
+  "ring_osc": "example_libs/ring_osc.gds"
 }
 ```
 

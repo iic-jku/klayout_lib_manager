@@ -26,7 +26,7 @@ This setup enables KLayout to register external GDS files as libraries, making t
 Launch KLayout in GUI mode by running the following script:
 
 ```bash
-klayout -rm load_libs.rb
+klayout -rm library_manager.rb
 ```
 
 Example for json file:
@@ -35,8 +35,7 @@ Example for json file:
 {
   "gf180mcu_fd_sc_mcu7t5v0": "example_libs/gf180mcu_fd_sc_mcu7t5v0.gds",
   "gf180mcu_fd_sc_mcu9t5v0": "example_libs/gf180mcu_fd_sc_mcu9t5v0.gds",
-  "gf180mcu_fd_io": "example_libs/gf180mcu_fd_io.gds",
-  "ring_osc": "example_libs/ring_osc.gds"
+  "gf180mcu_fd_io": "example_libs/gf180mcu_fd_io.gds"
 }
 ```
 

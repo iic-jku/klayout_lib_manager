@@ -61,7 +61,7 @@ end
 # ---------------------------
 load_action = Action.new
 load_action.title = "Load Libraries..."
-load_action.shortcut = "Ctrl+L"
+load_action.shortcut = "Ctrl+O"
 load_action.on_triggered do
   start_dir = Dir.pwd || "."
   dlg = FileDialog.get_open_file_name("Select libs.json", start_dir, "JSON files (*.json);;All files (*)")
@@ -78,7 +78,7 @@ $library_manager_actions << load_action
 # -------------------------------------
 save_lib_action = Action.new
 save_lib_action.title = "Save Library-Filtered Layout..."
-save_lib_action.shortcut = "Ctrl+Shift+S"
+save_lib_action.shortcut = "Ctrl+S"
 save_lib_action.on_triggered do
   mw = Application.instance.main_window
   cv = mw&.current_view

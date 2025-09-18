@@ -4,6 +4,9 @@
 
 [<p align="center"><img src="images/mabrains.png" width="700">](http://mabrains.com/)
 
+## Updated Version 18.09.2025
+- Added automatic load of libs.json of actual working directory
+
 ## Introduction
 
 This setup enables KLayout to register external GDS files as libraries, making them available for reference.

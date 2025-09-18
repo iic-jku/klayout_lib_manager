@@ -1,6 +1,12 @@
+# $autorun
 #!/usr/bin/env ruby
 # library_manager.rbm
-# Adds a top-level Library Manager menu with Load Libraries... and Prune Library Cells
+# Adds a Library Manager toolbar with:
+# - Load Libraries...
+# - Save Library-Filtered Layout...
+# - Re-Link Library Instances...
+# Auto-loads libs.json from the process working directory (Dir.pwd).
+
 require "json"
 
 include RBA
@@ -8,23 +14,23 @@ include RBA
 # Keep actions in global array so they aren't garbage-collected
 $library_manager_actions = []
 
-# Define the "Load Libraries..." action
-load_action = Action.new
-load_action.title = "Load Libraries..."
-load_action.shortcut = "Ctrl+L"
-load_action.on_triggered do
-  dlg = FileDialog.get_open_file_name("Select libs.json", ".", "JSON files (*.json);;All files (*)")
-  unless dlg.has_value?
-    MessageBox.info("Library Manager", "No JSON selected.", MessageBox::b_ok)
-    next
+# ---------------------------
+# Shared: load libs from JSON
+# ---------------------------
+def load_libs_from_json(json_path, silent: false)
+  unless File.exist?(json_path)
+    puts "Library Manager: libs.json not found at #{json_path}" unless silent
+    return 0
   end
 
+  raw = nil
   begin
-    raw = JSON.parse(File.read(dlg.value))
-    raise unless raw.is_a?(Hash) && raw.any?
+    raw = JSON.parse(File.read(json_path))
+    raise "JSON must be a non-empty object" unless raw.is_a?(Hash) && raw.any?
   rescue => e
-    MessageBox.critical("Library Manager", "Invalid JSON: #{e}", MessageBox::b_ok)
-    next
+    msg = "Invalid JSON: #{e}"
+    silent ? (puts "Library Manager: #{msg}") : MessageBox.critical("Library Manager", msg, MessageBox::b_ok)
+    return 0
   end
 
   count = 0
@@ -38,13 +44,40 @@ load_action.on_triggered do
     puts "Registered #{name} → #{path}"
   end
 
-  MessageBox.info("Library Manager", "Loaded #{count} libraries.", MessageBox::b_ok)
+  MessageBox.info("Library Manager", "Loaded #{count} libraries.", MessageBox::b_ok) unless silent
+  count
+end
+
+def cwd_libs_json
+  # Priority: explicit env var > current working dir > script dir (fallback)
+  env_path = ENV["KLAYOUT_LIBS_JSON"]
+  return env_path if env_path && !env_path.empty?
+  return File.join(Dir.pwd, "libs.json") if Dir.pwd && !Dir.pwd.empty?
+  File.expand_path("libs.json", __dir__)
+end
+
+# ---------------------------
+# Action: Load Libraries...
+# ---------------------------
+load_action = Action.new
+load_action.title = "Load Libraries..."
+load_action.shortcut = "Ctrl+L"
+load_action.on_triggered do
+  start_dir = Dir.pwd || "."
+  dlg = FileDialog.get_open_file_name("Select libs.json", start_dir, "JSON files (*.json);;All files (*)")
+  unless dlg.has_value?
+    MessageBox.info("Library Manager", "No JSON selected.", MessageBox::b_ok)
+    next
+  end
+  load_libs_from_json(dlg.value, silent: false)
 end
 $library_manager_actions << load_action
 
-
+# -------------------------------------
+# Action: Save Library-Filtered Layout…
+# -------------------------------------
 save_lib_action = Action.new
-save_lib_action.title = "Save Library‑Filtered Layout..."
+save_lib_action.title = "Save Library-Filtered Layout..."
 save_lib_action.shortcut = "Ctrl+Shift+S"
 save_lib_action.on_triggered do
   mw = Application.instance.main_window
@@ -56,8 +89,9 @@ save_lib_action.on_triggered do
   layout = cv.active_cellview.layout
 
   # Prompt for output filename
+  start_dir = Dir.pwd || "."
   outfile = FileDialog::ask_save_file_name(
-    "Save filtered layout as", ".", "GDS files (*.gds);;OASIS files (*.oas)"
+    "Save filtered layout as", start_dir, "GDS files (*.gds);;OASIS files (*.oas)"
   )
   if outfile.nil?
     MessageBox::info("Library Manager", "Save canceled.", MessageBox::Ok)
@@ -74,9 +108,8 @@ save_lib_action.on_triggered do
     puts "Renamed cell idx=#{c.cell_index}: '#{old_name}' → '#{new_name}'"
   end
 
-  # Prepare save options (excluding library cells, keeping instances)
+  # Prepare save options
   opts = SaveLayoutOptions.new
-  
   opts.gds2_write_cell_properties = true
   opts.write_context_info = true
 
@@ -92,18 +125,20 @@ save_lib_action.on_triggered do
 end
 $library_manager_actions << save_lib_action
 
-
+# ---------------------------------
+# Action: Re-Link Library Instances
+# ---------------------------------
 relink_action = Action.new
-relink_action.title    = "Re‑Link Library Instances..."
+relink_action.title    = "Re-Link Library Instances..."
 relink_action.shortcut = "Ctrl+Shift+O"
-
 relink_action.on_triggered do
   app = RBA::Application.instance
   mw  = app.main_window
 
-  # Step 1: Ensure a layout is open
+  # Ensure a layout is open
   unless mw.current_view
-    layout_path = FileDialog::ask_open_file_name("Select layout to relink", ".", "GDS/OAS files (*.gds *.oas)")
+    start_dir = Dir.pwd || "."
+    layout_path = FileDialog::ask_open_file_name("Select layout to relink", start_dir, "GDS/OAS files (*.gds *.oas)")
     if layout_path.nil?
       MessageBox::info("Library Manager", "No layout selected.", MessageBox::Ok)
       next
@@ -114,14 +149,12 @@ relink_action.on_triggered do
   cv     = mw.current_view
   layout = cv.active_cellview.layout
 
-  # 3️⃣ Collect all used qnames in the layout
+  # Collect all used qnames in the layout
   used_qnames = layout.each_cell.map(&:qname)
-
-  # Report to terminal
   puts "⚙️ Used cell qnames in layout:"
   used_qnames.each { |qn| puts "  - #{qn}" }
 
-  # 2. Map only those cells from libraries
+  # Map only those cells from libraries
   lib_map = {}
   Library.library_names.each do |lib_name|
     lib = Library.library_by_name(lib_name)
@@ -137,7 +170,7 @@ relink_action.on_triggered do
     next
   end
 
-  # 4️⃣ Replace instances using inst.replace for safety
+  # Replace instances
   count = 0
   cells_to_remove = []
   layout.start_changes
@@ -146,50 +179,55 @@ relink_action.on_triggered do
       qn = inst.cell.qname
       cn = inst.cell.cell_index
       next unless lib_map.key?(qn)
-      ## puts "Current #{qn} #{inst.class} #{inst.trans} #{inst.a} #{inst.b} #{inst.na} #{inst.nb} #{lib_map[qn]} #{cn}"
       new_inst = CellInstArray.new(lib_map[qn], inst.trans, inst.a, inst.b, inst.na, inst.nb)
-      inst.delete()
+      inst.delete
       parent.insert(new_inst)
       cells_to_remove << cn
       count += 1
     end
   end
 
-  cells_to_remove.each do |c|
-    layout.delete_cell(c)
-  end
+  cells_to_remove.each { |c| layout.delete_cell(c) }
 
   layout.end_changes
   cv.show_layout(layout, false)
-  
-  MessageBox::info("Library Manager", "Re‑linked #{count} instances to library cells.", MessageBox::Ok)
-  layout.refresh()
+
+  MessageBox::info("Library Manager", "Re-linked #{count} instances to library cells.", MessageBox::Ok)
+  layout.refresh
   mw.redraw
-
 end
-
 $library_manager_actions << relink_action
 
-
-# Insert the top-level menu and its sub-items
+# ---------------------------
+# Insert menu + toolbar items
+# ---------------------------
 app = Application.instance
 menu = app.main_window.menu
 
-# Use an icon for toolbar buttons
 icon_path_load  = File.expand_path("lib_manager.png",  __dir__)
-icon_path_save = File.expand_path("save-icon.png", __dir__)
-icon_path_open = File.expand_path("open-file.png", __dir__)
+icon_path_save  = File.expand_path("save-icon.png",    __dir__)
+icon_path_open  = File.expand_path("open-file.png",    __dir__)
 
-# Assign icons (you can skip icon_text if you want no text)
-load_action.icon       = icon_path_load     # toolbar will show image
-load_action.icon_text  = "Load Libraries"                # hide any text under icon (optional)
-save_lib_action.icon   = icon_path_save
+load_action.icon          = icon_path_load
+load_action.icon_text     = "Load Libraries"
+save_lib_action.icon      = icon_path_save
 save_lib_action.icon_text = "Save Library"
-relink_action.icon = icon_path_open
-relink_action.icon_text = "Open Library"
+relink_action.icon        = icon_path_open
+relink_action.icon_text   = "Open Library"
 
-# Add to toolbar using unique identifiers
 menu.insert_separator("@toolbar.end", "library_manager_sep")
-menu.insert_item("@toolbar.end","load_libraries",load_action)
-menu.insert_item("@toolbar.end", "save_library", save_lib_action)
-menu.insert_item("@toolbar.end", "open_libarary", relink_action)
+menu.insert_item("@toolbar.end", "load_libraries",  load_action)
+menu.insert_item("@toolbar.end", "save_library",    save_lib_action)
+menu.insert_item("@toolbar.end", "open_libarary",   relink_action)
+
+# ---------------------------
+# Auto-load libs.json at boot
+# ---------------------------
+begin
+  # Prefer the working directory used to launch KLayout
+  default_libs = cwd_libs_json
+  loaded = load_libs_from_json(default_libs, silent: true)
+  puts "Library Manager: auto-loaded #{loaded} libraries from #{default_libs}"
+rescue => e
+  puts "Library Manager: auto-load failed: #{e}"
+end

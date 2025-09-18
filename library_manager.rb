@@ -61,7 +61,7 @@ end
 # ---------------------------
 load_action = Action.new
 load_action.title = "Load Libraries..."
-load_action.shortcut = "Ctrl+O"
+load_action.shortcut = "Ctrl+Shift+O"
 load_action.on_triggered do
   start_dir = Dir.pwd || "."
   dlg = FileDialog.get_open_file_name("Select libs.json", start_dir, "JSON files (*.json);;All files (*)")
@@ -130,7 +130,7 @@ $library_manager_actions << save_lib_action
 # ---------------------------------
 relink_action = Action.new
 relink_action.title    = "Re-Link Library Instances..."
-relink_action.shortcut = "Ctrl+Shift+O"
+relink_action.shortcut = "Ctrl+O"
 relink_action.on_triggered do
   app = RBA::Application.instance
   mw  = app.main_window
